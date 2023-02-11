@@ -1,126 +1,110 @@
 package com.tm.playingcards.entity;
 
-import com.tm.playingcards.entity.base.EntityStacked;
-import com.tm.playingcards.util.ChatHelper;
+import com.mojang.math.Vector3d;
+import com.tm.playingcards.util.CardHelper;
 import com.tm.playingcards.util.ItemHelper;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.IPacket;
-import net.minecraft.network.datasync.DataParameter;
-import net.minecraft.network.datasync.DataSerializers;
-import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.DamageSource;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
-import net.minecraftforge.fml.network.NetworkHooks;
-import com.tm.playingcards.init.InitEntityTypes;
-import com.tm.playingcards.init.InitItems;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import com.tm.playingcards.init.ModEntityTypes;
+import com.tm.playingcards.init.ModItems;
 import com.tm.playingcards.item.ItemPokerChip;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.network.NetworkHooks;
 
 import java.util.Optional;
 import java.util.UUID;
 
 public class EntityPokerChip extends EntityStacked {
+    private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(EntityPokerChip.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<String> OWNER_NAME = SynchedEntityData.defineId(EntityPokerChip.class, EntityDataSerializers.STRING);
 
-    private static final DataParameter<Optional<UUID>> OWNER_UUID = EntityDataManager.createKey(EntityPokerChip.class, DataSerializers.OPTIONAL_UNIQUE_ID);
-    private static final DataParameter<String> OWNER_NAME = EntityDataManager.createKey(EntityPokerChip.class, DataSerializers.STRING);
-
-    public EntityPokerChip(EntityType<? extends EntityPokerChip> type, World world) {
+    public EntityPokerChip(EntityType<? extends EntityPokerChip> type, Level world) {
         super(type, world);
     }
 
-    public EntityPokerChip(World world, Vector3d position, UUID ownerID, String ownerName, byte firstChipID) {
-        super(InitEntityTypes.POKER_CHIP.get(), world, position);
+    public EntityPokerChip(Level world, Vector3d position, UUID ownerId, String ownerName, byte firstChipId) {
+        super(ModEntityTypes.POKER_CHIP.get(), world, position);
 
-        createStack();
-        addToTop(firstChipID);
-        dataManager.set(OWNER_UUID, Optional.of(ownerID));
-        dataManager.set(OWNER_NAME, ownerName);
+        createEmptyStack();
+        addToTop(firstChipId);
+        entityData.set(OWNER_UUID, Optional.of(ownerId));
+        entityData.set(OWNER_NAME, ownerName);
     }
 
     public UUID getOwnerUUID() {
-        return (dataManager.get(OWNER_UUID).isPresent()) ? dataManager.get(OWNER_UUID).get() : null;
+        return (entityData.get(OWNER_UUID).isPresent()) ? entityData.get(OWNER_UUID).get() : null;
     }
 
-    private void takeChip(PlayerEntity player) {
+    private void takeChip(Player player) {
+        byte chipId = getTopStackId();
 
-        byte chipID = getTopStackID();
-
-        if (!world.isRemote) spawnChip(player, ItemPokerChip.getPokerChip(chipID), 1);
+        if (!level.isClientSide)
+            spawnChip(player, ItemPokerChip.getPokerChip(chipId), 1);
 
         removeFromTop();
 
-        if (getStackAmount() <= 0) {
-            remove();
+        if (getStackSize() <= 0) {
+            remove(RemovalReason.DISCARDED);
         }
     }
 
     @Override
-    public ActionResultType processInitialInteract(PlayerEntity player, Hand hand) {
-
-        ItemStack stack = player.getHeldItem(hand);
+    public InteractionResult interact(Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
 
         if (stack.getItem() instanceof ItemPokerChip) {
+            CompoundTag nbt = ItemHelper.getNBT(stack);
 
-            CompoundNBT nbt = ItemHelper.getNBT(stack);
+            if (nbt.hasUUID("OwnerID")) {
+                UUID ownerId = nbt.getUUID("OwnerID");
 
-            if (nbt.hasUniqueId("OwnerID")) {
-
-                UUID ownerID = nbt.getUniqueId("OwnerID");
-
-                if (ownerID.equals(getOwnerUUID())) {
-
+                if (ownerId.equals(getOwnerUUID())) {
                     if (player.isCrouching()) {
-
-                        while (true) {
-
-                            if (getStackAmount() < MAX_STACK_SIZE && stack.getCount() > 0) {
-                                ItemPokerChip chip = (ItemPokerChip) stack.getItem();
-                                addToTop(chip.getChipID());
-                                stack.shrink(1);
-                            }
-
-                            else break;
-                        }
-                    }
-
-                    else {
-
-                        if (getStackAmount() < MAX_STACK_SIZE) {
+                        while (getStackSize() < CardHelper.MAX_STACK_SIZE && stack.getCount() > 0) {
                             ItemPokerChip chip = (ItemPokerChip) stack.getItem();
-                            addToTop(chip.getChipID());
+                            addToTop(chip.getChipId());
                             stack.shrink(1);
                         }
-
-                        else {
-                            if (world.isRemote) ChatHelper.printModMessage(TextFormatting.RED, new TranslationTextComponent("message.stack_full"), player);
+                    } else {
+                        if (getStackSize() < CardHelper.MAX_STACK_SIZE) {
+                            ItemPokerChip chip = (ItemPokerChip) stack.getItem();
+                            addToTop(chip.getChipId());
+                            stack.shrink(1);
+                        } else {
+                            if (level.isClientSide) {
+                                player.displayClientMessage(Component.translatable("message.stack_full").withStyle(ChatFormatting.RED), true);
+                            }
                         }
                     }
+                } else if (level.isClientSide) {
+                    player.displayClientMessage(Component.translatable("message.stack_owner_error").withStyle(ChatFormatting.RED), true);
                 }
-
-                else if (world.isRemote) ChatHelper.printModMessage(TextFormatting.RED, new TranslationTextComponent("message.stack_owner_error"), player);
             }
+        } else {
+            takeChip(player);
         }
 
-        else takeChip(player);
-
-        return ActionResultType.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     @Override
-    public boolean attackEntityFrom(DamageSource source, float amount) {
-
-        if (source.getImmediateSource() instanceof PlayerEntity) {
-
-            PlayerEntity player = (PlayerEntity) source.getImmediateSource();
+    public boolean hurt(DamageSource source, float amount) {
+        if (source.getEntity() instanceof Player) {
+            Player player = (Player) source.getEntity();
 
             int whiteAmount = 0;
             int redAmount = 0;
@@ -128,24 +112,23 @@ public class EntityPokerChip extends EntityStacked {
             int greenAmount = 0;
             int blackAmount = 0;
 
-            for (int i = 0; i < dataManager.get(STACK).length; i++) {
+            for (int i = 0; i < entityData.get(STACK).length; i++) {
+                byte chipId = getIdAt(i);
 
-                byte chipID = getIDAt(i);
-
-                if (chipID == 0) whiteAmount++;
-                if (chipID == 1) redAmount++;
-                if (chipID == 2) blueAmount++;
-                if (chipID == 3) greenAmount++;
-                if (chipID == 4) blackAmount++;
+                if (chipId == 0) whiteAmount++;
+                if (chipId == 1) redAmount++;
+                if (chipId == 2) blueAmount++;
+                if (chipId == 3) greenAmount++;
+                if (chipId == 4) blackAmount++;
             }
 
-            if (whiteAmount > 0) spawnChip(player, InitItems.POKER_CHIP_WHITE.get(), whiteAmount);
-            if (redAmount > 0) spawnChip(player, InitItems.POKER_CHIP_RED.get(), redAmount);
-            if (blueAmount > 0) spawnChip(player, InitItems.POKER_CHIP_BLUE.get(), blueAmount);
-            if (greenAmount > 0) spawnChip(player, InitItems.POKER_CHIP_GREEN.get(), greenAmount);
-            if (blackAmount > 0) spawnChip(player, InitItems.POKER_CHIP_BLACK.get(), blackAmount);
+            if (whiteAmount > 0) spawnChip(player, ModItems.POKER_CHIP_WHITE.get(), whiteAmount);
+            if (redAmount > 0)   spawnChip(player, ModItems.POKER_CHIP_RED.get(), redAmount);
+            if (blueAmount > 0)  spawnChip(player, ModItems.POKER_CHIP_BLUE.get(), blueAmount);
+            if (greenAmount > 0) spawnChip(player, ModItems.POKER_CHIP_GREEN.get(), greenAmount);
+            if (blackAmount > 0) spawnChip(player, ModItems.POKER_CHIP_BLACK.get(), blackAmount);
 
-            remove();
+            remove(RemovalReason.DISCARDED);
 
             return false;
         }
@@ -153,50 +136,50 @@ public class EntityPokerChip extends EntityStacked {
         return true;
     }
 
-    private void spawnChip(PlayerEntity player, Item item, int amount) {
+    private void spawnChip(Player player, Item item, int amount) {
+        if (level.isClientSide)
+            return;
 
-        if (!world.isRemote) {
-            ItemStack chip = new ItemStack(item, amount);
-            CompoundNBT nbt = ItemHelper.getNBT(chip);
-            nbt.putUniqueId("OwnerID", getOwnerUUID());
-            nbt.putString("OwnerName", dataManager.get(OWNER_NAME));
-            ItemHelper.spawnStackAtEntity(world, player, chip);
-        }
+        ItemStack chip = new ItemStack(item, amount);
+        CompoundTag nbt = ItemHelper.getNBT(chip);
+        nbt.putUUID("OwnerID", getOwnerUUID());
+        nbt.putString("OwnerName", entityData.get(OWNER_NAME));
+        ItemHelper.spawnStackAtEntity(level, player, chip);
     }
 
     @Override
     public void tick() {
         super.tick();
 
-        Vector3d pos = getPositionVec();
+        Vec3 pos = position();
         double size = 0.1D;
         double addAmount = 0.01575D;
 
-        setBoundingBox(new AxisAlignedBB(pos.x - size, pos.y, pos.z - size, pos.x + size, pos.y + 0.02D + (addAmount * getStackAmount()), pos.z + size));
+        setBoundingBox(new AABB(pos.x - size, pos.y, pos.z - size, pos.x + size, pos.y + 0.02D + (addAmount * getStackSize()), pos.z + size));
     }
 
     @Override
     public void moreData() {
-        dataManager.register(OWNER_UUID, Optional.empty());
-        dataManager.register(OWNER_NAME, "");
+        entityData.define(OWNER_UUID, Optional.empty());
+        entityData.define(OWNER_NAME, "");
     }
 
     @Override
-    protected void readAdditional(CompoundNBT nbt) {
-        super.readAdditional(nbt);
-        dataManager.set(OWNER_UUID, Optional.of(nbt.getUniqueId("OwnerID")));
-        dataManager.set(OWNER_NAME, nbt.getString("OwnerName"));
+    protected void readAdditionalSaveData(CompoundTag nbt) {
+        super.readAdditionalSaveData(nbt);
+        entityData.set(OWNER_UUID, Optional.of(nbt.getUUID("OwnerID")));
+        entityData.set(OWNER_NAME, nbt.getString("OwnerName"));
     }
 
     @Override
-    protected void writeAdditional(CompoundNBT nbt) {
-        super.writeAdditional(nbt);
-        nbt.putUniqueId("OwnerID", getOwnerUUID());
-        nbt.putString("OwnerName", dataManager.get(OWNER_NAME));
+    protected void addAdditionalSaveData(CompoundTag nbt) {
+        super.addAdditionalSaveData(nbt);
+        nbt.putUUID("OwnerID", getOwnerUUID());
+        nbt.putString("OwnerName", entityData.get(OWNER_NAME));
     }
 
     @Override
-    public IPacket<?> createSpawnPacket() {
+    public Packet<?> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

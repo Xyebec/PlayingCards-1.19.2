@@ -3,12 +3,10 @@ package com.tm.playingcards.util;
 import java.text.DecimalFormat;
 
 public class StringHelper {
-
-    public static String printCommas (int amount) {
-
+    public static String printCommas(int amount) {
         String number = String.valueOf(amount);
         double amountD = Double.parseDouble(number);
-        DecimalFormat formatter = new DecimalFormat("#,###");
+        DecimalFormat formatter = new DecimalFormat("#.###");
 
         return formatter.format(amountD);
     }

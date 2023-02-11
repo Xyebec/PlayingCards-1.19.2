@@ -1,30 +1,28 @@
 package com.tm.playingcards.util;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.util.Util;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 
 public class UnitChatMessage {
-
     private final String unitName;
-    private final Entity[] players;
+    private final Player[] players;
 
-    public UnitChatMessage(String unitName, Entity... players) {
+    public UnitChatMessage(String unitName, Player... players) {
         this.unitName = unitName;
         this.players = players;
     }
 
-    public void printMessage(TextFormatting format, TranslationTextComponent message) {
-
-        for (Entity player : players) {
-            player.sendMessage(new StringTextComponent("[").mergeStyle(TextFormatting.WHITE).append(getUnitName().appendString("] ")).append(message.mergeStyle(format)), Util.DUMMY_UUID);
+    public void printMessage(ChatFormatting format, MutableComponent message) {
+        for (Player player : players) {
+            player.displayClientMessage(Component.literal("[").withStyle(ChatFormatting.WHITE).append(getUnitName().append("] ")).append(message.withStyle(format)), true);
         }
     }
 
-    private TranslationTextComponent getUnitName() {
-        return new TranslationTextComponent("unitname." + unitName);
+    private MutableComponent getUnitName() {
+        return Component.translatable("unitname." + unitName);
     }
 
 }

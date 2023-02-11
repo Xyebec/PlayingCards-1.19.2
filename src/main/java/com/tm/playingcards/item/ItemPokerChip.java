@@ -1,160 +1,133 @@
 package com.tm.playingcards.item;
 
+import com.mojang.math.Vector3d;
 import com.tm.playingcards.entity.EntityPokerChip;
-import com.tm.playingcards.init.InitItems;
-import com.tm.playingcards.item.base.ItemBase;
-import com.tm.playingcards.main.PlayingCards;
-import com.tm.playingcards.tileentity.TileEntityPokerTable;
+import com.tm.playingcards.init.ModItems;
 import com.tm.playingcards.util.ItemHelper;
-import com.tm.playingcards.util.Location;
 import com.tm.playingcards.util.StringHelper;
 import com.tm.playingcards.util.UnitChatMessage;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUseContext;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
 
-public class ItemPokerChip extends ItemBase {
-
-    private final byte chipID;
+public class ItemPokerChip extends Item {
+    private final byte chipId;
     private final int value;
 
-    public ItemPokerChip(byte chipID, int value) {
-        super(new Properties().group(PlayingCards.TAB));
-        this.chipID = chipID;
+    public ItemPokerChip(byte chipId, int value) {
+        super(new Properties().tab(ModItems.TAB));
+        this.chipId = chipId;
         this.value = value;
     }
 
-    private UnitChatMessage getUnitMessage(PlayerEntity... players) {
+    private UnitChatMessage getUnitMessage(Player... players) {
         return new UnitChatMessage("poker_chip", players);
     }
 
-    public byte getChipID() {
-        return this.chipID;
+    public byte getChipId() {
+        return this.chipId;
     }
 
-    public static Item getPokerChip(byte pokerChipID) {
-
-        switch (pokerChipID) {
-            case 1:
-                return InitItems.POKER_CHIP_RED.get();
-            case 2:
-                return InitItems.POKER_CHIP_BLUE.get();
-            case 3:
-                return InitItems.POKER_CHIP_GREEN.get();
-            case 4:
-                return InitItems.POKER_CHIP_BLACK.get();
-        }
-
-        return InitItems.POKER_CHIP_WHITE.get();
+    public static Item getPokerChip(byte pokerChipId) {
+        return switch (pokerChipId) {
+            case 1  -> ModItems.POKER_CHIP_RED.get();
+            case 2  -> ModItems.POKER_CHIP_BLUE.get();
+            case 3  -> ModItems.POKER_CHIP_GREEN.get();
+            case 4  -> ModItems.POKER_CHIP_BLACK.get();
+            default -> ModItems.POKER_CHIP_WHITE.get();
+        };
     }
 
     @Override
-    public void addInformation(ItemStack stack, @Nullable World world, List<ITextComponent> tooltip, ITooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+        CompoundTag nbt = ItemHelper.getNBT(stack);
 
-        CompoundNBT nbt = ItemHelper.getNBT(stack);
+        String owner = nbt.hasUUID("OwnerID") ? nbt.getString("OwnerName") : "Not set";
+        tooltip.add(Component.translatable(ChatFormatting.GRAY + "Owner: " + ChatFormatting.GOLD + owner));
 
-        if (nbt.hasUniqueId("OwnerID")) {
-            tooltip.add(new StringTextComponent(TextFormatting.GRAY + "Owner: " + TextFormatting.GOLD + nbt.getString("OwnerName")));
-        }
-
-        else tooltip.add(new StringTextComponent(TextFormatting.GRAY + "Owner: " + TextFormatting.GOLD + "Not set"));
-
-        tooltip.add(new StringTextComponent(TextFormatting.GRAY + "Value (1): " + TextFormatting.GOLD + value));
+        tooltip.add(Component.translatable(ChatFormatting.GRAY + "Value (1): " + ChatFormatting.GOLD + value));
 
         if (stack.getCount() > 1) {
-            tooltip.add(new StringTextComponent(TextFormatting.GRAY + "Value (" + stack.getCount() + "): " + TextFormatting.GOLD + StringHelper.printCommas(value * stack.getCount())));
+            tooltip.add(Component.translatable(ChatFormatting.GRAY + "Value (" + stack.getCount() + "): " + ChatFormatting.GOLD + StringHelper.printCommas(value * stack.getCount())));
         }
     }
 
     @Override
-    public ActionResult<ItemStack> onItemRightClick(World world, PlayerEntity player, Hand hand) {
+    public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
+        ItemStack heldItem = player.getItemInHand(hand);
 
-        ItemStack heldItem = player.getHeldItem(hand);
+        if (!player.isCrouching())
+            return new InteractionResultHolder<>(InteractionResult.FAIL, heldItem);
 
-        if (player.isCrouching()) {
+        UnitChatMessage unitMessage = getUnitMessage(player);
+        CompoundTag nbt = ItemHelper.getNBT(heldItem);
 
-            UnitChatMessage unitMessage = getUnitMessage(player);
-            CompoundNBT nbt = ItemHelper.getNBT(heldItem);
+        if (!nbt.hasUUID("OwnerID")) {
+            nbt.putUUID("OwnerID", player.getUUID());
+            nbt.putString("OwnerName", player.getDisplayName().getString());
 
-            if (!nbt.hasUniqueId("OwnerID")) {
-
-                nbt.putUniqueId("OwnerID", player.getUniqueID());
-                nbt.putString("OwnerName", player.getDisplayName().getString());
-
-                if (world.isRemote) unitMessage.printMessage(TextFormatting.GREEN, new TranslationTextComponent("message.poker_chip_owner_set"));
-            }
-
-            else if (world.isRemote) unitMessage.printMessage(TextFormatting.RED, new TranslationTextComponent("message.poker_chip_owner_error"));
-
-            return new ActionResult<>(ActionResultType.SUCCESS, heldItem);
+            if (world.isClientSide)
+                unitMessage.printMessage(ChatFormatting.GREEN, Component.translatable("message.poker_chip_owner_set"));
+        } else if (world.isClientSide) {
+            unitMessage.printMessage(ChatFormatting.RED, Component.translatable("message.poker_chip_owner_error"));
         }
 
-        return new ActionResult<>(ActionResultType.FAIL, heldItem);
+        return new InteractionResultHolder<>(InteractionResult.SUCCESS, heldItem);
     }
 
     @Override
-    public ActionResultType onItemUse(ItemUseContext context) {
+    public InteractionResult useOn(UseOnContext context) {
+        Player player = context.getPlayer();
+        if (player == null || player.isCrouching())
+            return InteractionResult.PASS;
 
-        PlayerEntity player = context.getPlayer();
+        Level world = context.getLevel();
+        //Location location = new Location(world, context.getClickedPos());
 
-        if (player != null) {
+        UnitChatMessage unitMessage = getUnitMessage(player);
+        CompoundTag nbt = ItemHelper.getNBT(context.getItemInHand());
 
-            if (!player.isCrouching()) {
+        if (nbt.hasUUID("OwnerID")) {
+            UUID ownerId = nbt.getUUID("OwnerID");
+            String ownerName = nbt.getString("OwnerName");
 
-                World world = context.getWorld();
-                Location location = new Location(world, context.getPos());
+            //if (world.getBlockState(context.getClickedPos()).hasBlockEntity()) {
+            //    BlockEntity tileEntity = world.getBlockEntity(context.getClickedPos());
 
-                UnitChatMessage unitMessage = getUnitMessage(player);
-                CompoundNBT nbt = ItemHelper.getNBT(context.getItem());
+            //    if (tileEntity instanceof TileEntityPokerTable) {
+            //        TileEntityPokerTable pokerTable = (TileEntityPokerTable)tileEntity;
 
-                if (nbt.hasUniqueId("OwnerID")) {
+            //        if (!ownerId.equals(pokerTable.getOwnerId())) {
+            //            if (world.isClientSide)
+            //                unitMessage.printMessage(ChatFormatting.RED, Component.translatable("message.poker_chip_table_error"));
 
-                    UUID ownerID = nbt.getUniqueId("OwnerID");
-                    String ownerName = nbt.getString("OwnerName");
+            //            return InteractionResult.PASS;
+            //        }
+            //    }
+            //}
 
-                    if (location.getBlock().hasTileEntity(location.getBlockState())) {
-
-                        TileEntity tileEntity = location.getTileEntity();
-
-                        if (tileEntity instanceof TileEntityPokerTable) {
-
-                            TileEntityPokerTable pokerTable = (TileEntityPokerTable) tileEntity;
-
-                            if (!ownerID.equals(pokerTable.getOwnerID())) {
-
-                                if (world.isRemote) unitMessage.printMessage(TextFormatting.RED, new TranslationTextComponent("message.poker_chip_table_error"));
-                                return ActionResultType.PASS;
-                            }
-                        }
-                    }
-
-                    EntityPokerChip chip = new EntityPokerChip(world, context.getHitVec(), ownerID, ownerName, chipID);
-                    world.addEntity(chip);
-                    context.getItem().shrink(1);
-                }
-
-                else if (world.isRemote) unitMessage.printMessage(TextFormatting.RED, new TranslationTextComponent("message.poker_chip_owner_missing"));
-
-                return ActionResultType.SUCCESS;
-            }
+            Vec3 clickPos = context.getClickLocation();
+            EntityPokerChip chip = new EntityPokerChip(world, new Vector3d(clickPos.x, clickPos.y, clickPos.z), ownerId, ownerName, chipId);
+            world.addFreshEntity(chip);
+            context.getItemInHand().shrink(1);
+        } else if (world.isClientSide) {
+            player.displayClientMessage(Component.translatable("message.poker_chip_owner_missing").withStyle(ChatFormatting.RED), true);
         }
 
-        return ActionResultType.PASS;
+        return InteractionResult.SUCCESS;
     }
 }

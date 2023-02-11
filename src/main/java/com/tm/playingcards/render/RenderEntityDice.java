@@ -1,39 +1,32 @@
 package com.tm.playingcards.render;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
-import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.client.renderer.entity.EntityRendererManager;
-import net.minecraft.util.ResourceLocation;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.tm.playingcards.entity.EntityDice;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.resources.ResourceLocation;
 
 public class RenderEntityDice extends EntityRenderer<EntityDice> {
-
-    public RenderEntityDice(EntityRendererManager renderManager) {
+    public RenderEntityDice(EntityRendererProvider.Context renderManager) {
         super(renderManager);
     }
 
     @Override
-    public void render(EntityDice entity, float entityYaw, float partialTicks, MatrixStack matrixStack, IRenderTypeBuffer bufferIn, int combinedLight) {
-        super.render(entity, entityYaw, partialTicks, matrixStack, bufferIn, combinedLight);
+    public void render(EntityDice entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int combinedLight) {
+        super.render(entity, entityYaw, partialTicks, poseStack, buffer, combinedLight);
 
-        //Push
-        matrixStack.push();
-
-        //Translate
-        matrixStack.translate(0, 0.15D, 0);
-
-        //Scale
-        //matrixStack.func_227862_a_(0.6F, 0.6F, 0.6F);
+        poseStack.pushPose();
+        poseStack.translate(0, 0.15D, 0);
+        //poseStack.scale(0.6F, 0.6F, 0.6F);
 
         //CardHelper.renderItem(new ItemStack(InitItems.DICE_WHITE.get()), 0, 0,0, matrixStack, buffer, combinedLight);
 
-        //Pop
-        matrixStack.pop();
+        poseStack.popPose();
     }
 
     @Override
-    public ResourceLocation getEntityTexture(EntityDice entity) {
+    public ResourceLocation getTextureLocation(EntityDice entity) {
         return null;
     }
 }

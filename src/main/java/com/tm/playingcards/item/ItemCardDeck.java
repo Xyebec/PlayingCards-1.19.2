@@ -1,61 +1,59 @@
 package com.tm.playingcards.item;
 
+import com.mojang.math.Vector3d;
 import com.tm.playingcards.entity.EntityCardDeck;
-import com.tm.playingcards.item.base.ItemBase;
-import com.tm.playingcards.main.PlayingCards;
+import com.tm.playingcards.init.ModItems;
 import com.tm.playingcards.util.CardHelper;
 import com.tm.playingcards.util.ItemHelper;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUseContext;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.NonNullList;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.List;
 
-public class ItemCardDeck extends ItemBase {
-
+public class ItemCardDeck extends Item {
     public ItemCardDeck() {
-        super(new Item.Properties().group(PlayingCards.TAB).maxStackSize(1));
+        super(new Item.Properties().tab(ModItems.TAB).stacksTo(1));
     }
 
     @Override
-    public void addInformation(ItemStack stack, @Nullable World worldIn, List<ITextComponent> tooltip, ITooltipFlag flagIn) {
-        CompoundNBT nbt = ItemHelper.getNBT(stack);
-        tooltip.add(new TranslationTextComponent("lore.cover").appendString(" ").mergeStyle(TextFormatting.GRAY).append(new TranslationTextComponent(CardHelper.CARD_SKIN_NAMES[nbt.getByte("SkinID")]).mergeStyle(TextFormatting.AQUA)));
+    public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+        CompoundTag nbt = ItemHelper.getNBT(stack);
+        tooltip.add(Component.translatable("lore.cover").append(" ").withStyle(ChatFormatting.GRAY).append(Component.translatable(CardHelper.CARD_SKIN_NAMES[nbt.getByte("SkinID")]).withStyle(ChatFormatting.AQUA)));
     }
 
     @Override
-    public void fillItemGroup(ItemGroup group, NonNullList<ItemStack> items) {
+    public void fillItemCategory(CreativeModeTab tab, NonNullList<ItemStack> items) {
+        if (tab != ModItems.TAB)
+            return;
 
-        if (group == PlayingCards.TAB) {
+        for (byte colorId = 0; colorId < CardHelper.CARD_SKIN_NAMES.length; colorId++) {
+            ItemStack stack = new ItemStack(this);
+            CompoundTag nbt = ItemHelper.getNBT(stack);
 
-            for (byte colorID = 0; colorID < CardHelper.CARD_SKIN_NAMES.length; colorID++) {
-
-                ItemStack stack = new ItemStack(this);
-                CompoundNBT nbt = ItemHelper.getNBT(stack);
-
-                nbt.putByte("SkinID", colorID);
-                items.add(stack);
-            }
+            nbt.putByte("SkinID", colorId);
+            items.add(stack);
         }
     }
 
     @Override
-    public ActionResultType onItemUse(ItemUseContext context) {
-        World world = context.getWorld();
-        CompoundNBT nbt = ItemHelper.getNBT(context.getItem());
-        EntityCardDeck cardDeck = new EntityCardDeck(world, context.getHitVec(), context.getPlacementYaw(), nbt.getByte("SkinID"));
-        world.addEntity(cardDeck);
-        context.getItem().shrink(1);
-        return ActionResultType.SUCCESS;
+    public InteractionResult useOn(UseOnContext context) {
+        Level world = context.getLevel();
+        CompoundTag nbt = ItemHelper.getNBT(context.getItemInHand());
+        Vec3 clickPos = context.getClickLocation();
+        EntityCardDeck cardDeck = new EntityCardDeck(world, new Vector3d(clickPos.x, clickPos.y, clickPos.z), context.getRotation(), nbt.getByte("SkinID"));
+        world.addFreshEntity(cardDeck);
+        context.getItemInHand().shrink(1);
+        return InteractionResult.SUCCESS;
     }
 }

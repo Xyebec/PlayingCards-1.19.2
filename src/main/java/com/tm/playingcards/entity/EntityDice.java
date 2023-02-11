@@ -1,84 +1,82 @@
 package com.tm.playingcards.entity;
 
-import com.tm.playingcards.init.InitEntityTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.MoverType;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.IPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.world.World;
-import net.minecraftforge.fml.network.NetworkHooks;
+import com.mojang.math.Vector3d;
+import com.tm.playingcards.init.ModEntityTypes;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.network.NetworkHooks;
 
 public class EntityDice extends Entity {
-
-    public EntityDice(EntityType<? extends EntityDice> type, World world) {
+    public EntityDice(EntityType<? extends EntityDice> type, Level world) {
         super(type, world);
     }
 
-    public EntityDice(World world, Vector3d position, float rotation) {
-        this(InitEntityTypes.DICE.get(), world);
-        setLocationAndAngles(position.x, position.y, position.z, rotation, 0);
+    public EntityDice(Level world, Vector3d position, float rotation) {
+        this(ModEntityTypes.DICE.get(), world);
+        setPos(position.x, position.y, position.z);
+        setRot(rotation, 0);
 
-        float sin = MathHelper.sin(this.rotationYaw * 0.017453292F - 11);
-        float cos = MathHelper.cos(this.rotationYaw * 0.017453292F - 11);
+        float sin = Mth.sin(this.getYRot() * 0.017453292F - 11);
+        float cos = Mth.cos(this.getYRot() * 0.017453292F - 11);
 
-        this.setMotion(0.5D * cos, 0.2D, 0.5D * sin);
+        this.setDeltaMovement(0.5D * cos, 0.2D, 0.5D * sin);
     }
 
     public void tick() {
-
         super.tick();
 
-        this.prevPosX = this.getPosition().getX();
-        this.prevPosY = this.getPosition().getY();
-        this.prevPosZ = this.getPosition().getZ();
+        this.xOld = this.getX();
+        this.yOld = this.getY();
+        this.zOld = this.getZ();
 
-        Vector3d motion = this.getMotion();
+        Vec3 motion = this.getDeltaMovement();
 
-        if (!this.hasNoGravity()) {
-            this.setMotion(this.getMotion().add(0.0D, -0.04D, 0.0D));
+        if (!this.isNoGravity()) {
+            this.setDeltaMovement(motion.add(0.0D, -0.04D, 0.0D));
         }
 
-        if (this.world.isRemote) {
-            this.noClip = false;
+        if (this.level.isClientSide) {
+            this.noPhysics = false;
         }
 
-        if (!this.onGround || (this.ticksExisted + this.getEntityId()) % 4 == 0) {
-
-            this.move(MoverType.SELF, this.getMotion());
+        if (!this.onGround || (this.tickCount + this.getId()) % 4 == 0) {
+            this.move(MoverType.SELF, this.getDeltaMovement());
             float f = 0.98F;
 
             if (this.onGround) {
-                BlockPos pos = new BlockPos(this.getPosition().getX(), this.getPosition().getY() - 1.0D, this.getPosition().getZ());
-                f = this.world.getBlockState(pos).getSlipperiness(this.world, pos, this) * 0.98F;
+                BlockPos pos = new BlockPos(this.getX(), this.getY() - 1.0D, this.getZ());
+                f = this.level.getBlockState(pos).getFriction(this.level, pos, this) * 0.98F;
             }
 
-            this.setMotion(this.getMotion().mul(f, 0.98D, f));
+            this.setDeltaMovement(this.getDeltaMovement().multiply(f, 0.98D, f));
             if (this.onGround) {
-                this.setMotion(this.getMotion().mul(1.0D, -0.5D, 1.0D));
+                this.setDeltaMovement(this.getDeltaMovement().multiply(1.0D, -0.5D, 1.0D));
             }
         }
 
-        if (!this.world.isRemote) {
-            double d0 = this.getMotion().subtract(motion).lengthSquared();
+        if (!this.level.isClientSide) {
+            double d0 = this.getDeltaMovement().subtract(motion).lengthSqr();
             if (d0 > 0.01D) {
-                this.isAirBorne = true;
+                this.onGround = true;
             }
         }
     }
 
     @Override
-    public ITextComponent getCustomName() {
-        return new StringTextComponent("6");
+    public Component getCustomName() {
+        return Component.literal("6");
     }
 
     @Override
-    public boolean getAlwaysRenderNameTagForRender() {
+    public boolean shouldShowName() {
         return true;
     }
 
@@ -88,21 +86,22 @@ public class EntityDice extends Entity {
     }
 
     @Override
-    protected void registerData() {
+    protected void defineSynchedData() {
 
     }
 
     @Override
-    protected void readAdditional(CompoundNBT compound) {
+    protected void readAdditionalSaveData(CompoundTag p_20052_) {
 
     }
 
     @Override
-    protected void writeAdditional(CompoundNBT compound) {
+    protected void addAdditionalSaveData(CompoundTag p_20139_) {
 
     }
 
-    public IPacket<?> createSpawnPacket() {
+    @Override
+    public Packet<?> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

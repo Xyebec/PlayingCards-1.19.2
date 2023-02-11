@@ -1,51 +1,50 @@
 package com.tm.playingcards.render;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Vector3f;
 import com.tm.playingcards.entity.EntityPokerChip;
 import com.tm.playingcards.item.ItemPokerChip;
 import com.tm.playingcards.util.CardHelper;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.client.renderer.entity.EntityRendererManager;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.vector.Vector3f;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.Random;
 
 public class RenderEntityPokerChip extends EntityRenderer<EntityPokerChip> {
-
-    public RenderEntityPokerChip(EntityRendererManager renderManager) {
+    public RenderEntityPokerChip(EntityRendererProvider.Context renderManager) {
         super(renderManager);
     }
 
     @Override
-    public void render(EntityPokerChip entity, float entityYaw, float partialTicks, MatrixStack matrixStack, IRenderTypeBuffer buffer, int combinedLight) {
-        super.render(entity, entityYaw, partialTicks, matrixStack, buffer, combinedLight);
+    public void render(EntityPokerChip entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int combinedLight) {
+        super.render(entity, entityYaw, partialTicks, poseStack, buffer, combinedLight);
 
-        matrixStack.push();
-        matrixStack.translate(0, 0.01D, 0.07D);
-        matrixStack.scale(0.5F, 0.5F, 0.5F);
+        poseStack.pushPose();
+        poseStack.translate(0, 0.01D, 0.07D);
+        poseStack.scale(0.5F, 0.5F, 0.5F);
 
-        for (byte i = 0; i < entity.getStackAmount(); i++) {
-            matrixStack.push();
+        for (byte i = 0; i < entity.getStackSize(); i++) {
+            poseStack.pushPose();
 
             Random randomX = new Random(i * 200000);
             Random randomY = new Random(i * 100000);
 
-            matrixStack.translate(randomX.nextDouble() * 0.05D - 0.025D, 0, randomY.nextDouble() * 0.05D - 0.025D);
-            matrixStack.rotate(Vector3f.XN.rotationDegrees(90));
+            poseStack.translate(randomX.nextDouble() * 0.05D - 0.025D, 0, randomY.nextDouble() * 0.05D - 0.025D);
+            poseStack.mulPose(Vector3f.XN.rotationDegrees(90));
 
-            CardHelper.renderItem(new ItemStack(ItemPokerChip.getPokerChip(entity.getIDAt(i))), 0, 0,i * 0.032D, matrixStack, buffer, combinedLight);
+            CardHelper.renderItem(new ItemStack(ItemPokerChip.getPokerChip(entity.getIdAt(i))), 0, 0,i * 0.032D, poseStack, buffer, combinedLight);
 
-            matrixStack.pop();
+            poseStack.popPose();
         }
 
-        matrixStack.pop();
+        poseStack.popPose();
     }
 
     @Override
-    public ResourceLocation getEntityTexture(EntityPokerChip entity) {
+    public ResourceLocation getTextureLocation(EntityPokerChip entity) {
         return null;
     }
 }

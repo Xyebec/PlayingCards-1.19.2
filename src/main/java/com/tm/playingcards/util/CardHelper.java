@@ -1,69 +1,45 @@
 package com.tm.playingcards.util;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
-import net.minecraft.client.renderer.model.ItemCameraTransforms;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.text.IFormattableTextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.world.item.ItemStack;
 
 public class CardHelper {
+    public static final String[] CARD_SKIN_NAMES = { "card.skin.blue", "card.skin.red", "card.skin.black", "card.skin.pig" };
+    public static final byte MAX_STACK_SIZE = 52;
 
-    public static final String[] CARD_SKIN_NAMES = {"card.skin.blue", "card.skin.red", "card.skin.black", "card.skin.pig"};
-
-    public static void renderItem(ItemStack stack, double offsetX, double offsetY, double offsetZ, MatrixStack matrixStack, IRenderTypeBuffer buffer, int combinedLight) {
-        matrixStack.push();
-        matrixStack.translate(offsetX, offsetY, offsetZ);
-        Minecraft.getInstance().getItemRenderer().renderItem(stack, ItemCameraTransforms.TransformType.GROUND, combinedLight, OverlayTexture.NO_OVERLAY, matrixStack, buffer);
-        matrixStack.pop();
+    public static void renderItem(ItemStack stack, double offsetX, double offsetY, double offsetZ, PoseStack poseStack, MultiBufferSource buffer, int combinedLight) {
+        poseStack.pushPose();
+        poseStack.translate(offsetX, offsetY, offsetZ);
+        Minecraft.getInstance().getItemRenderer().renderStatic(stack, ItemTransforms.TransformType.GROUND, combinedLight, OverlayTexture.NO_OVERLAY, poseStack, buffer, 0);
+        poseStack.popPose();
     }
 
-    public static IFormattableTextComponent getCardName(int id) {
+    public static MutableComponent getCardName(int id) {
+        int typeId = id / 4 + 1;
 
-        String type = "card.ace";
+        String type = switch (typeId) {
+            case 0  -> "card.ace";
+            case 11 -> "card.jack";
+            case 12 -> "card.queen";
+            case 13 -> "card.king";
+            default -> "" + typeId;
+        };
 
-        int typeID = id / 4 + 1;
+        int suiteId = id % 4;
 
-        if (typeID > 1 && typeID < 11) {
-            type = "" + typeID;
-        }
+        String suite = switch (suiteId) {
+            case 1  -> "card.clubs";
+            case 2  -> "card.diamonds";
+            case 3  -> "card.hearts";
+            default -> "card.spades";
+        };
 
-        if (typeID > 10) {
-            type = "card.jack";
-
-            if (typeID > 11) {
-                type = "card.queen";
-
-                if (typeID > 12) {
-                    type = "card.king";
-                }
-            }
-        }
-
-        String suite = "card.spades";
-
-        int suiteID = id % 4;
-
-        switch(suiteID) {
-
-            case 1: {
-                suite = "card.clubs";
-                break;
-            }
-
-            case 2: {
-                suite = "card.diamonds";
-                break;
-            }
-
-            case 3: {
-                suite = "card.hearts";
-                break;
-            }
-        }
-
-        return new TranslationTextComponent(type).appendString(" ").append(new TranslationTextComponent("card.of").appendString(" ").append(new TranslationTextComponent(suite)));
+        return Component.translatable(type).append(" ").append(Component.translatable("card.of").append(" ").append(Component.translatable(suite)));
     }
 }

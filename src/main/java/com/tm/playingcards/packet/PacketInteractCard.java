@@ -1,47 +1,40 @@
 package com.tm.playingcards.packet;
 
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
 import com.tm.playingcards.item.ItemCardCovered;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
+import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
 public class PacketInteractCard {
+    private final String command;
 
-    private String command;
-
-    public PacketInteractCard () {}
-
-    public PacketInteractCard (String command) {
+    public PacketInteractCard(String command) {
         this.command = command;
     }
 
-    public PacketInteractCard (PacketBuffer buf) {
-        command = buf.readString(11).trim();
+    public PacketInteractCard(FriendlyByteBuf buf) {
+        command = buf.readUtf(11).trim();
     }
 
-    public void toBytes (PacketBuffer buf) {
-        buf.writeString(command, 11);
+    public void toBytes(FriendlyByteBuf buf) {
+        buf.writeUtf(command, 11);
     }
 
-    public void handle (Supplier<NetworkEvent.Context> ctx) {
-
+    public void handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
+            ServerPlayer player = ctx.get().getSender();
+            if (player == null)
+                return;
 
-            ServerPlayerEntity player = ctx.get().getSender();
+            if (command.equalsIgnoreCase("flipinv")) {
+                Item item = player.getMainHandItem().getItem();
 
-            if (player != null) {
-
-                if (command.equalsIgnoreCase("flipinv")) {
-
-                    Item item = player.getHeldItemMainhand().getItem();
-
-                    if (item instanceof ItemCardCovered) {
-                        ItemCardCovered card = (ItemCardCovered)player.getHeldItemMainhand().getItem();
-                        card.flipCard(player.getHeldItemMainhand(), player);
-                    }
+                if (item instanceof ItemCardCovered) {
+                    ItemCardCovered card = (ItemCardCovered)item;
+                    card.flipCard(player.getMainHandItem(), player);
                 }
             }
         });

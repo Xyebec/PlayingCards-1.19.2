@@ -1,139 +1,127 @@
 package com.tm.playingcards.item;
 
+import com.mojang.math.Vector3d;
 import com.tm.playingcards.entity.EntityCard;
 import com.tm.playingcards.entity.EntityCardDeck;
-import com.tm.playingcards.init.InitItems;
-import com.tm.playingcards.item.base.ItemBase;
+import com.tm.playingcards.init.ModItems;
 import com.tm.playingcards.util.CardHelper;
 import com.tm.playingcards.util.ItemHelper;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUseContext;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
 
-public class ItemCardCovered extends ItemBase {
-
-    protected boolean covered = true;
+public class ItemCardCovered extends Item {
+    protected boolean isCovered = true;
 
     public ItemCardCovered() {
-        super(new Properties().maxStackSize(1));
+        super(new Properties().stacksTo(1));
     }
 
     @Override
-    public void addInformation(ItemStack stack, @Nullable World worldIn, List<ITextComponent> tooltip, ITooltipFlag flagIn) {
-        CompoundNBT nbt = ItemHelper.getNBT(stack);
-        tooltip.add(new TranslationTextComponent("lore.cover").appendString(" ").mergeStyle(TextFormatting.GRAY).append(new TranslationTextComponent(CardHelper.CARD_SKIN_NAMES[nbt.getByte("SkinID")]).mergeStyle(TextFormatting.AQUA)));
+    public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
+        CompoundTag nbt = ItemHelper.getNBT(stack);
+        tooltip.add(Component.translatable("lore.cover").append(" ").withStyle(ChatFormatting.GRAY).append(Component.translatable(CardHelper.CARD_SKIN_NAMES[nbt.getByte("SkinID")]).withStyle(ChatFormatting.AQUA)));
     }
 
     public void flipCard(ItemStack heldItem, LivingEntity entity) {
+        if (!(entity instanceof Player))
+            return;
 
-        if (entity instanceof PlayerEntity) {
+        Player player = (Player)entity;
+        if (!(player.getMainHandItem().getItem() instanceof ItemCardCovered))
+            return;
 
-            PlayerEntity player = (PlayerEntity) entity;
+        Item nextCard = isCovered ? ModItems.CARD.get() : ModItems.CARD_COVERED.get();
 
-            if (player.getHeldItemMainhand().getItem() instanceof ItemCardCovered) {
+        ItemStack newCard = new ItemStack(nextCard);
+        newCard.setDamageValue(heldItem.getDamageValue());
 
-                Item nextCard = InitItems.CARD.get();
-                if (!covered) nextCard = InitItems.CARD_COVERED.get();
+        CompoundTag heldNBT = ItemHelper.getNBT(heldItem);
+        ItemHelper.getNBT(newCard).putUUID("UUID", heldNBT.getUUID("UUID"));
+        ItemHelper.getNBT(newCard).putByte("SkinID", heldNBT.getByte("SkinID"));
 
-                ItemStack newCard = new ItemStack(nextCard);
-                newCard.setDamage(heldItem.getDamage());
+        player.setItemInHand(InteractionHand.MAIN_HAND, newCard);
+    }
 
-                CompoundNBT heldNBT = ItemHelper.getNBT(heldItem);
-                ItemHelper.getNBT(newCard).putUniqueId("UUID", heldNBT.getUniqueId("UUID"));
-                ItemHelper.getNBT(newCard).putByte("SkinID", heldNBT.getByte("SkinID"));
+    @Override
+    public void inventoryTick(ItemStack stack, Level world, Entity entity, int itemSlot, boolean isSelected) {
+        if (world.getGameTime() % 60 != 0)
+            return;
 
-                player.setHeldItem(Hand.MAIN_HAND, newCard);
+        if (!(entity instanceof Player))
+            return;
+
+        Player player = (Player)entity;
+        BlockPos pos = player.blockPosition();
+
+        CompoundTag nbt = ItemHelper.getNBT(stack);
+
+        if (!nbt.hasUUID("UUID"))
+            return;
+
+        UUID id = ItemHelper.getNBT(stack).getUUID("UUID");
+
+        if (id.getLeastSignificantBits() == 0)
+            return;
+
+        List<EntityCardDeck> closeDecks = world.getEntitiesOfClass(EntityCardDeck.class, new AABB(pos.getX() - 20, pos.getY() - 20, pos.getZ() - 20, pos.getX() + 20, pos.getY() + 20, pos.getZ() + 20));
+
+        boolean found = false;
+
+        for (EntityCardDeck closeDeck : closeDecks) {
+            if (closeDeck.getUUID().equals(id)) {
+                found = true;
+                break;
             }
+        }
+
+        if (!found) {
+            player.getInventory().getItem(itemSlot).shrink(1);
         }
     }
 
     @Override
-    public void inventoryTick(ItemStack stack, World world, Entity entity, int itemSlot, boolean isSelected) {
+    public InteractionResult useOn(UseOnContext context) {
+        Player player = context.getPlayer();
+        if (player == null || player.isCrouching())
+            return InteractionResult.PASS;
 
-        if (world.getGameTime() % 60 == 0) {
+        BlockPos pos = context.getClickedPos();
+        Level world = context.getLevel();
+        List<EntityCardDeck> closeDecks = world.getEntitiesOfClass(EntityCardDeck.class, new AABB(pos.getX() - 8, pos.getY() - 8, pos.getZ() - 8, pos.getX() + 8, pos.getY() + 8, pos.getZ() + 8));
 
-            if (entity instanceof PlayerEntity) {
+        CompoundTag nbt = ItemHelper.getNBT(context.getItemInHand());
 
-                PlayerEntity player = (PlayerEntity) entity;
-                BlockPos pos = player.getPosition();
+        UUID deckId = nbt.getUUID("UUID");
 
-                CompoundNBT nbt = ItemHelper.getNBT(stack);
+        for (EntityCardDeck closeDeck : closeDecks) {
+            if (closeDeck.getUUID().equals(deckId)) {
+                Vec3 clickPos = context.getClickLocation();
+                EntityCard cardDeck = new EntityCard(world, new Vector3d(clickPos.x, clickPos.y, clickPos.z), context.getRotation(), nbt.getByte("SkinID"), deckId, isCovered, (byte)context.getItemInHand().getDamageValue());
+                world.addFreshEntity(cardDeck);
+                context.getItemInHand().shrink(1);
 
-                if (nbt.hasUniqueId("UUID")) {
-                    UUID id = ItemHelper.getNBT(stack).getUniqueId("UUID");
-
-                    if (id.getLeastSignificantBits() == 0) {
-                        return;
-                    }
-
-                    List<EntityCardDeck> closeDecks = world.getEntitiesWithinAABB(EntityCardDeck.class, new AxisAlignedBB(pos.getX() - 20, pos.getY() - 20, pos.getZ() - 20, pos.getX() + 20, pos.getY() + 20, pos.getZ() + 20));
-
-                    boolean found = false;
-
-                    for (EntityCardDeck closeDeck : closeDecks) {
-
-                        if (closeDeck.getUniqueID().equals(id)) {
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found) {
-                        player.inventory.getStackInSlot(itemSlot).shrink(1);
-                    }
-                }
-            }
-        }
-    }
-
-    @Override
-    public ActionResultType onItemUse(ItemUseContext context) {
-
-        PlayerEntity player = context.getPlayer();
-
-        if (player != null) {
-
-            if (!player.isCrouching()) {
-
-                BlockPos pos = context.getPos();
-                List<EntityCardDeck> closeDecks = context.getWorld().getEntitiesWithinAABB(EntityCardDeck.class, new AxisAlignedBB(pos.getX() - 8, pos.getY() - 8, pos.getZ() - 8, pos.getX() + 8, pos.getY() + 8, pos.getZ() + 8));
-
-                CompoundNBT nbt = ItemHelper.getNBT(context.getItem());
-
-                UUID deckID = nbt.getUniqueId("UUID");
-
-                for (EntityCardDeck closeDeck : closeDecks) {
-
-                    if (closeDeck.getUniqueID().equals(deckID)) {
-
-                        World world = context.getWorld();
-                        EntityCard cardDeck = new EntityCard(world, context.getHitVec(), context.getPlacementYaw(), nbt.getByte("SkinID"), deckID, covered, (byte) context.getItem().getDamage());
-                        world.addEntity(cardDeck);
-                        context.getItem().shrink(1);
-
-                        return ActionResultType.SUCCESS;
-                    }
-                }
+                return InteractionResult.SUCCESS;
             }
         }
 
-        return ActionResultType.PASS;
+        return InteractionResult.PASS;
     }
 }

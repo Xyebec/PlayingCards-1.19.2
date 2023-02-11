@@ -1,10 +1,10 @@
 package com.tm.playingcards.event;
 
-import com.tm.playingcards.main.PlayingCards;
+import com.tm.playingcards.PlayingCards;
 import com.tm.playingcards.packet.PacketInteractCard;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.InputEvent;
@@ -12,32 +12,27 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import com.tm.playingcards.item.ItemCardCovered;
 
 public class CardInteractEvent {
-
     @SubscribeEvent
     @OnlyIn(Dist.CLIENT)
-    public void onLeftClick (InputEvent.MouseInputEvent event) {
-
+    public void onLeftClick(InputEvent.MouseButton.Pre event) {
         Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != null)
+            return;
 
-        if (mc.currentScreen == null) {
+        if (event.getAction() != 1 || event.getButton() != 0)
+            return;
 
-            if (event.getAction() == 1 && event.getButton() == 0) {
+        Player player = mc.player;
+        if (mc.level == null || player == null)
+            return;
 
-                PlayerEntity player = mc.player;
+        ItemStack heldStack = player.getMainHandItem();
+        if (!(heldStack.getItem() instanceof ItemCardCovered))
+            return;
 
-                if (mc.world != null && player != null) {
+        ItemCardCovered card = (ItemCardCovered)heldStack.getItem();
+        card.flipCard(heldStack, player);
 
-                    ItemStack heldStack = player.getHeldItemMainhand();
-
-                    if (heldStack.getItem() instanceof ItemCardCovered) {
-
-                        ItemCardCovered card = (ItemCardCovered)player.getHeldItemMainhand().getItem();
-                        card.flipCard(player.getHeldItemMainhand(), player);
-
-                        PlayingCards.network.sendToServer(new PacketInteractCard("flipinv"));
-                    }
-                }
-            }
-        }
+        PlayingCards.network.sendToServer(new PacketInteractCard("flipinv"));
     }
 }
