@@ -1,5 +1,5 @@
 # Playing Cards
-For MC 1.16.4
+For MC 1.19.2
 
 Adds playing cards, poker chips, and more!
 

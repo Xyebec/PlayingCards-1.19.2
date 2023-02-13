@@ -1,7 +1,6 @@
 {
 	"parent": "playingcards:item/card_base",
 	"overrides": [
-
 		{"predicate": {"value": 0},  "model": "playingcards:item/card_ace_spades"},
 		{"predicate": {"value": 1},  "model": "playingcards:item/card_ace_clubs"},
 		{"predicate": {"value": 2},  "model": "playingcards:item/card_ace_diamonds"},

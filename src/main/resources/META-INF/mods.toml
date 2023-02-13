@@ -5,16 +5,7 @@ license="GNU General Public License v3.0"
 [[mods]]
     modId="playingcards"
     namespace="playingcards"
-    version="1.0.1"
+    version="1.0.2"
     displayName="Playing Cards"
-    authors="Calemi, Kryto627"
-    description='''
-    Adds playing cards, poker chips, and more!
-    '''
-
-[[dependencies.cspirit]]
-    modId="forge"
-    mandatory=true
-    versionRange="[31,)"
-    ordering="NONE"
-    side="BOTH"
+    authors="Calemi, Kryto627, Xyebec"
+    description="Adds playing cards, poker chips, and more!"

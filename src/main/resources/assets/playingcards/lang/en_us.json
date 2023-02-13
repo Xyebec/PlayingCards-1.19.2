@@ -1,7 +1,8 @@
 {
-
-  "block.playingcards.poker_table": "Poker Table",
-  "block.playingcards.bar_stool": "Bar Stool",
+  "entity.playingcards.card": "Playing Card",
+  "entity.playingcards.card_deck:": "Playing Card Deck",
+  "entity.playingcards.poker_chip": "Poker Chip",
+  "entity.playingcards.dice": "Dice",
 
   "item.playingcards.card_deck": "Card Deck",
   "item.playingcards.card_covered": "Covered Card",
@@ -41,7 +42,6 @@
   "message.poker_chip_owner_set": "The owner has been set to you!",
   "message.poker_chip_owner_error": "An owner already exists!",
   "message.poker_chip_owner_missing": "No owner found! Cannot place!",
-  "message.poker_chip_table_error": "The owner of your chip(s) do not match the owner of the table. Cannot place!",
 
   "unitname.mod_name": "Playing Cards",
   "unitname.poker_chip": "Poker Chip"

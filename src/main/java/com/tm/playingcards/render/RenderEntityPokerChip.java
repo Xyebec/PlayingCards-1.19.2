@@ -32,10 +32,10 @@ public class RenderEntityPokerChip extends EntityRenderer<EntityPokerChip> {
             Random randomX = new Random(i * 200000);
             Random randomY = new Random(i * 100000);
 
-            poseStack.translate(randomX.nextDouble() * 0.05D - 0.025D, 0, randomY.nextDouble() * 0.05D - 0.025D);
+            poseStack.translate(randomX.nextDouble() * 0.05D - 0.025D, i * 0.032D, randomY.nextDouble() * 0.05D - 0.025D);
             poseStack.mulPose(Vector3f.XN.rotationDegrees(90));
 
-            CardHelper.renderItem(new ItemStack(ItemPokerChip.getPokerChip(entity.getIdAt(i))), 0, 0,i * 0.032D, poseStack, buffer, combinedLight);
+            CardHelper.renderItem(new ItemStack(ItemPokerChip.getPokerChip(entity.getIdAt(i))), poseStack, buffer, combinedLight);
 
             poseStack.popPose();
         }

@@ -20,6 +20,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -100,7 +101,7 @@ public class ItemCardCovered extends Item {
     @Override
     public InteractionResult useOn(UseOnContext context) {
         Player player = context.getPlayer();
-        if (player == null || player.isCrouching())
+        if (player == null)
             return InteractionResult.PASS;
 
         BlockPos pos = context.getClickedPos();
@@ -123,5 +124,10 @@ public class ItemCardCovered extends Item {
         }
 
         return InteractionResult.PASS;
+    }
+
+    @Override
+    public boolean canAttackBlock(BlockState state, Level world, BlockPos pos, Player player) {
+        return false;
     }
 }

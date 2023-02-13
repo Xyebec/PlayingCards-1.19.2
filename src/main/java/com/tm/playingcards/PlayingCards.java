@@ -31,7 +31,6 @@ public class PlayingCards {
         //InitTileEntityTypes.register(MOD_EVENT_BUS);
         ModEntityTypes.register(modEventBus);
         ModItems.register(modEventBus);
-        ModRecipes.register(modEventBus);
 
         modEventBus.addListener(this::onCommonSetup);
         modEventBus.addListener(this::onClientSetup);

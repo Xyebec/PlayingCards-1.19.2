@@ -13,11 +13,8 @@ public class CardHelper {
     public static final String[] CARD_SKIN_NAMES = { "card.skin.blue", "card.skin.red", "card.skin.black", "card.skin.pig" };
     public static final byte MAX_STACK_SIZE = 52;
 
-    public static void renderItem(ItemStack stack, double offsetX, double offsetY, double offsetZ, PoseStack poseStack, MultiBufferSource buffer, int combinedLight) {
-        poseStack.pushPose();
-        poseStack.translate(offsetX, offsetY, offsetZ);
+    public static void renderItem(ItemStack stack, PoseStack poseStack, MultiBufferSource buffer, int combinedLight) {
         Minecraft.getInstance().getItemRenderer().renderStatic(stack, ItemTransforms.TransformType.GROUND, combinedLight, OverlayTexture.NO_OVERLAY, poseStack, buffer, 0);
-        poseStack.popPose();
     }
 
     public static MutableComponent getCardName(int id) {

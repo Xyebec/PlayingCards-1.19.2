@@ -22,8 +22,8 @@ public class ItemDice extends Item {
         ItemStack stack = player.getItemInHand(hand);
 
         Vec3 pos = player.position();
-        EntityDice cardDeck = new EntityDice(world, new Vector3d(pos.x, pos.y, pos.z), player.getYHeadRot());
-        world.addFreshEntity(cardDeck);
+        EntityDice dice = new EntityDice(world, new Vector3d(pos.x, pos.y, pos.z), player.getYHeadRot());
+        world.addFreshEntity(dice);
         stack.shrink(1);
 
         return new InteractionResultHolder<>(InteractionResult.SUCCESS, stack);

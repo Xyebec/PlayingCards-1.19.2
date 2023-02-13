@@ -3,6 +3,7 @@ package com.tm.playingcards.entity;
 import com.mojang.math.Vector3d;
 import com.tm.playingcards.init.ModDataSerializers;
 import com.tm.playingcards.util.ArrayHelper;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -84,25 +85,75 @@ public abstract class EntityStacked extends Entity {
     public void tick() {
         super.tick();
 
-        if (level.isClientSide) {
-            noPhysics = false;
-        } else {
-            noPhysics = !level.noCollision(this);
+        //if (level.isClientSide) {
+        //    noPhysics = false;
+        //} else {
+        //    noPhysics = !level.noCollision(this);
 
-            if (noPhysics) {
-                setDeltaMovement(getDeltaMovement().add(0.0D, 0.02D, 0.0D));
-            } else {
-                setDeltaMovement(getDeltaMovement().add(0.0D, -0.04D, 0.0D));
+        //    if (noPhysics) {
+        //        setDeltaMovement(getDeltaMovement().add(0.0D, 0.02D, 0.0D));
+        //    } else {
+        //        setDeltaMovement(getDeltaMovement().add(0.0D, -0.04D, 0.0D));
+        //    }
+        //}
+
+
+
+        Vec3 velocity = this.getDeltaMovement();
+
+        if (!this.isNoGravity()) {
+            this.setDeltaMovement(this.getDeltaMovement().add(0.0D, -0.04D, 0.0D));
+        }
+
+        if (this.level.isClientSide) {
+            this.noPhysics = false;
+        } else {
+            this.noPhysics = !this.level.noCollision(this);
+            if (this.noPhysics) {
+                this.moveTowardsClosestSpace(this.getX(), (this.getBoundingBox().minY + this.getBoundingBox().maxY) / 2.0D, this.getZ());
             }
         }
 
-        move(MoverType.SELF, getDeltaMovement());
+        if (!this.onGround || this.getDeltaMovement().horizontalDistanceSqr() > (double)1.0E-5F || (this.tickCount + this.getId()) % 4 == 0) {
+            this.move(MoverType.SELF, this.getDeltaMovement());
+            float f1 = 0.98F;
+            if (this.onGround) {
+                f1 = this.level.getBlockState(new BlockPos(this.getX(), this.getY() - 1.0D, this.getZ())).getFriction(level, new BlockPos(this.getX(), this.getY() - 1.0D, this.getZ()), this) * 0.98F;
+            }
 
-        Vec3 pos = position();
-        double size = 0.2D;
-        double addAmount = 0.0045D;
+            this.setDeltaMovement(this.getDeltaMovement().multiply((double)f1, 0.98D, (double)f1));
+            if (this.onGround) {
+                Vec3 vec31 = this.getDeltaMovement();
+                if (vec31.y < 0.0D) {
+                    this.setDeltaMovement(vec31.multiply(1.0D, -0.5D, 1.0D));
+                }
+            }
+        }
 
-        setBoundingBox(new AABB(pos.x - size, pos.y, pos.z - size, pos.x + size, pos.y + 0.03D + (addAmount * getStackSize()), pos.z + size));
+        this.hasImpulse |= this.updateInWaterStateAndDoFluidPushing();
+        if (!this.level.isClientSide) {
+            double d0 = this.getDeltaMovement().subtract(velocity).lengthSqr();
+            if (d0 > 0.01D) {
+                this.hasImpulse = true;
+            }
+        }
+
+
+
+
+
+
+        //if (!onGround && !level.isClientSide) {
+        //    setDeltaMovement(getDeltaMovement().add(0.0D, -0.02D, 0.0D));
+        //    move(MoverType.SELF, getDeltaMovement());
+        //}
+
+
+        //Vec3 pos = position();
+        //double size = 0.2D;
+        //double addAmount = 0.0045D;
+
+        //setBoundingBox(new AABB(pos.x - size, pos.y, pos.z - size, pos.x + size, pos.y + 0.03D + (addAmount * getStackSize()), pos.z + size));
     }
 
     public abstract void moreData();
