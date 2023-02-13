@@ -159,7 +159,8 @@ public class EntityPokerChip extends EntityStacked {
     }
 
     @Override
-    public void moreData() {
+    protected void defineSynchedData() {
+        super.defineSynchedData();
         entityData.define(OWNER_UUID, Optional.empty());
         entityData.define(OWNER_NAME, "");
     }

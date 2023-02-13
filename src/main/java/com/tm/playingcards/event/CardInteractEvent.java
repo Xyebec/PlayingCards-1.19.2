@@ -9,7 +9,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import com.tm.playingcards.item.ItemCardCovered;
+import com.tm.playingcards.item.ItemCard;
 
 public class CardInteractEvent {
     @SubscribeEvent
@@ -27,10 +27,10 @@ public class CardInteractEvent {
             return;
 
         ItemStack heldStack = player.getMainHandItem();
-        if (!(heldStack.getItem() instanceof ItemCardCovered))
+        if (!(heldStack.getItem() instanceof ItemCard))
             return;
 
-        ItemCardCovered card = (ItemCardCovered)heldStack.getItem();
+        ItemCard card = (ItemCard)heldStack.getItem();
         card.flipCard(heldStack, player);
 
         PlayingCards.network.sendToServer(new PacketInteractCard("flipinv"));

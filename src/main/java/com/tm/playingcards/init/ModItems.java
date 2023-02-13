@@ -1,7 +1,6 @@
 package com.tm.playingcards.init;
 
 import com.tm.playingcards.item.ItemCard;
-import com.tm.playingcards.item.ItemCardCovered;
 import com.tm.playingcards.item.ItemCardDeck;
 import com.tm.playingcards.item.ItemPokerChip;
 import com.tm.playingcards.PlayingCards;
@@ -32,8 +31,8 @@ public class ModItems {
     //----- ITEMS ------\\
 
     public static final RegistryObject<Item> CARD_DECK = ITEMS.register("card_deck", ItemCardDeck::new);
-    public static final RegistryObject<Item> CARD_COVERED = ITEMS.register("card_covered", ItemCardCovered::new);
-    public static final RegistryObject<Item> CARD = ITEMS.register("card", ItemCard::new);
+    public static final RegistryObject<Item> CARD_COVERED = ITEMS.register("card_covered", () -> new ItemCard(true));
+    public static final RegistryObject<Item> CARD = ITEMS.register("card", () -> new ItemCard(false));
 
     public static final RegistryObject<Item> POKER_CHIP_WHITE = ITEMS.register("poker_chip_white", () -> new ItemPokerChip((byte)0, 1));
     public static final RegistryObject<Item> POKER_CHIP_RED = ITEMS.register("poker_chip_red", () -> new ItemPokerChip((byte)1,5));

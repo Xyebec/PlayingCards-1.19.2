@@ -3,7 +3,7 @@ package com.tm.playingcards.entity;
 import com.mojang.math.Vector3d;
 import com.tm.playingcards.init.ModEntityTypes;
 import com.tm.playingcards.init.ModItems;
-import com.tm.playingcards.item.ItemCardCovered;
+import com.tm.playingcards.item.ItemCard;
 import com.tm.playingcards.util.CardHelper;
 import com.tm.playingcards.util.ItemHelper;
 import net.minecraft.ChatFormatting;
@@ -109,7 +109,7 @@ public class EntityCard extends EntityStacked {
     public InteractionResult interact(Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
 
-        if (!(stack.getItem() instanceof ItemCardCovered)) {
+        if (!(stack.getItem() instanceof ItemCard)) {
             takeCard(player);
             return InteractionResult.SUCCESS;
         }
@@ -136,7 +136,8 @@ public class EntityCard extends EntityStacked {
     }
 
     @Override
-    public void moreData() {
+    protected void defineSynchedData() {
+        super.defineSynchedData();
         entityData.define(SKIN_ID, (byte) 0);
         entityData.define(DECK_UUID, Optional.empty());
         entityData.define(COVERED, false);

@@ -1,6 +1,6 @@
 package com.tm.playingcards.packet;
 
-import com.tm.playingcards.item.ItemCardCovered;
+import com.tm.playingcards.item.ItemCard;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
@@ -32,8 +32,8 @@ public class PacketInteractCard {
             if (command.equalsIgnoreCase("flipinv")) {
                 Item item = player.getMainHandItem().getItem();
 
-                if (item instanceof ItemCardCovered) {
-                    ItemCardCovered card = (ItemCardCovered)item;
+                if (item instanceof ItemCard) {
+                    ItemCard card = (ItemCard)item;
                     card.flipCard(player.getMainHandItem(), player);
                 }
             }

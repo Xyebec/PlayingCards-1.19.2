@@ -11,7 +11,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 public abstract class EntityStacked extends Entity {
@@ -85,20 +84,6 @@ public abstract class EntityStacked extends Entity {
     public void tick() {
         super.tick();
 
-        //if (level.isClientSide) {
-        //    noPhysics = false;
-        //} else {
-        //    noPhysics = !level.noCollision(this);
-
-        //    if (noPhysics) {
-        //        setDeltaMovement(getDeltaMovement().add(0.0D, 0.02D, 0.0D));
-        //    } else {
-        //        setDeltaMovement(getDeltaMovement().add(0.0D, -0.04D, 0.0D));
-        //    }
-        //}
-
-
-
         Vec3 velocity = this.getDeltaMovement();
 
         if (!this.isNoGravity()) {
@@ -121,7 +106,7 @@ public abstract class EntityStacked extends Entity {
                 f1 = this.level.getBlockState(new BlockPos(this.getX(), this.getY() - 1.0D, this.getZ())).getFriction(level, new BlockPos(this.getX(), this.getY() - 1.0D, this.getZ()), this) * 0.98F;
             }
 
-            this.setDeltaMovement(this.getDeltaMovement().multiply((double)f1, 0.98D, (double)f1));
+            this.setDeltaMovement(this.getDeltaMovement().multiply(f1, 0.98D, f1));
             if (this.onGround) {
                 Vec3 vec31 = this.getDeltaMovement();
                 if (vec31.y < 0.0D) {
@@ -137,31 +122,11 @@ public abstract class EntityStacked extends Entity {
                 this.hasImpulse = true;
             }
         }
-
-
-
-
-
-
-        //if (!onGround && !level.isClientSide) {
-        //    setDeltaMovement(getDeltaMovement().add(0.0D, -0.02D, 0.0D));
-        //    move(MoverType.SELF, getDeltaMovement());
-        //}
-
-
-        //Vec3 pos = position();
-        //double size = 0.2D;
-        //double addAmount = 0.0045D;
-
-        //setBoundingBox(new AABB(pos.x - size, pos.y, pos.z - size, pos.x + size, pos.y + 0.03D + (addAmount * getStackSize()), pos.z + size));
     }
-
-    public abstract void moreData();
 
     @Override
     protected void defineSynchedData() {
         entityData.define(STACK, new Byte[0]);
-        moreData();
     }
 
     @Override

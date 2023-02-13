@@ -105,7 +105,8 @@ public class EntityCardDeck extends EntityStacked {
     }
 
     @Override
-    public void moreData() {
+    protected void defineSynchedData() {
+        super.defineSynchedData();
         entityData.define(SKIN_ID, (byte) 0);
     }
 
