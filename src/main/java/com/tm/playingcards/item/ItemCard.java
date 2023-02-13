@@ -127,6 +127,9 @@ public class ItemCard extends Item {
             }
         }
 
+        if (player.level.isClientSide)
+            player.displayClientMessage(Component.translatable("message.deck_too_far").withStyle(ChatFormatting.RED), true);
+
         return InteractionResult.PASS;
     }
 

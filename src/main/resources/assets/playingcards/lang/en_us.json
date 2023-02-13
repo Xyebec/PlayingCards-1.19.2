@@ -35,6 +35,7 @@
 
   "itemGroup.playingcards.tabMain": "Playing Cards",
 
+  "message.deck_too_far": "The card deck is too far away!",
   "message.stack_full": "The stack is full!",
   "message.stack_empty": "Out of cards!",
   "message.stack_shuffled": "You shuffled the deck",
