@@ -38,12 +38,11 @@ public class ItemCard extends Item {
     public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, world, tooltip, flag);
 
-        if (isCovered) {
-            CompoundTag nbt = ItemHelper.getNBT(stack);
-            tooltip.add(Component.translatable("lore.cover").append(" ").withStyle(ChatFormatting.GRAY).append(Component.translatable(CardHelper.CARD_SKIN_NAMES[nbt.getByte("SkinID")]).withStyle(ChatFormatting.AQUA)));
-        } else {
+        if (!isCovered)
             tooltip.add(CardHelper.getCardName(stack.getDamageValue()).withStyle(ChatFormatting.GOLD));
-        }
+
+        CompoundTag nbt = ItemHelper.getNBT(stack);
+        tooltip.add(Component.translatable("lore.cover").append(" ").withStyle(ChatFormatting.GRAY).append(Component.translatable(CardHelper.CARD_SKIN_NAMES[nbt.getByte("SkinID")]).withStyle(ChatFormatting.AQUA)));
     }
 
     public void flipCard(ItemStack heldItem, LivingEntity entity) {
@@ -78,7 +77,7 @@ public class ItemCard extends Item {
         if (!nbt.hasUUID("UUID"))
             return;
 
-        UUID deckUUID = ItemHelper.getNBT(stack).getUUID("UUID");
+        UUID deckUUID = nbt.getUUID("UUID");
         if (deckUUID.getLeastSignificantBits() == 0)
             return;
 

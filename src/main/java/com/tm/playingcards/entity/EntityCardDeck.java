@@ -58,15 +58,15 @@ public class EntityCardDeck extends EntityStacked {
             return InteractionResult.FAIL;
 
         if (getStackSize() > 0) {
-            int cardId = getTopStackId();
-
-            ItemStack card = new ItemStack(ModItems.CARD_COVERED.get());
-
-            card.setDamageValue(cardId);
-            ItemHelper.getNBT(card).putUUID("UUID", getUUID());
-            ItemHelper.getNBT(card).putByte("SkinID", entityData.get(SKIN_ID));
-
             if (!level.isClientSide) {
+                int cardId = getTopStackId();
+
+                ItemStack card = new ItemStack(ModItems.CARD_COVERED.get());
+
+                card.setDamageValue(cardId);
+                ItemHelper.getNBT(card).putUUID("UUID", getUUID());
+                ItemHelper.getNBT(card).putByte("SkinID", entityData.get(SKIN_ID));
+
                 ItemHelper.spawnStackAtEntity(level, player, card);
             }
 

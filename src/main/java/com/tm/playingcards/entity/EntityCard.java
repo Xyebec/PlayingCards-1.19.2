@@ -88,7 +88,6 @@ public class EntityCard extends EntityStacked {
             return;
 
         remove(RemovalReason.DISCARDED);
-        super.onRemovedFromWorld();
     }
 
     @Override
