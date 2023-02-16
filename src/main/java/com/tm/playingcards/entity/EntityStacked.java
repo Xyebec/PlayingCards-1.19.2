@@ -69,6 +69,9 @@ public abstract class EntityStacked extends Entity {
     }
 
     public void shuffleStack() {
+        if (level.isClientSide)
+            return;
+
         Byte[] newStack = new Byte[getStackSize()];
 
         for (int index = 0; index < getStackSize(); index++) {
@@ -84,7 +87,7 @@ public abstract class EntityStacked extends Entity {
     public void tick() {
         super.tick();
 
-        Vec3 velocity = this.getDeltaMovement();
+        Vec3 prevVelocity = this.getDeltaMovement();
 
         if (!this.isNoGravity()) {
             this.setDeltaMovement(this.getDeltaMovement().add(0.0D, -0.04D, 0.0D));
@@ -101,23 +104,23 @@ public abstract class EntityStacked extends Entity {
 
         if (!this.onGround || this.getDeltaMovement().horizontalDistanceSqr() > (double)1.0E-5F || (this.tickCount + this.getId()) % 4 == 0) {
             this.move(MoverType.SELF, this.getDeltaMovement());
-            float f1 = 0.98F;
+            float friction = 0.98F;
             if (this.onGround) {
-                f1 = this.level.getBlockState(new BlockPos(this.getX(), this.getY() - 1.0D, this.getZ())).getFriction(level, new BlockPos(this.getX(), this.getY() - 1.0D, this.getZ()), this) * 0.98F;
+                friction = this.level.getBlockState(new BlockPos(this.getX(), this.getY() - 1.0D, this.getZ())).getFriction(level, new BlockPos(this.getX(), this.getY() - 1.0D, this.getZ()), this) * 0.98F;
             }
 
-            this.setDeltaMovement(this.getDeltaMovement().multiply(f1, 0.98D, f1));
+            this.setDeltaMovement(this.getDeltaMovement().multiply(friction, 0.98D, friction));
             if (this.onGround) {
-                Vec3 vec31 = this.getDeltaMovement();
-                if (vec31.y < 0.0D) {
-                    this.setDeltaMovement(vec31.multiply(1.0D, -0.5D, 1.0D));
+                Vec3 velocity = this.getDeltaMovement();
+                if (velocity.y < 0.0D) {
+                    this.setDeltaMovement(velocity.multiply(1.0D, -0.5D, 1.0D));
                 }
             }
         }
 
         this.hasImpulse |= this.updateInWaterStateAndDoFluidPushing();
         if (!this.level.isClientSide) {
-            double d0 = this.getDeltaMovement().subtract(velocity).lengthSqr();
+            double d0 = this.getDeltaMovement().subtract(prevVelocity).lengthSqr();
             if (d0 > 0.01D) {
                 this.hasImpulse = true;
             }

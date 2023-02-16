@@ -109,9 +109,10 @@ public class ItemCard extends Item {
         }
 
         Vec3 clickPos = context.getClickLocation();
-        EntityCard cardDeck = new EntityCard(world, new Vector3d(clickPos.x, clickPos.y, clickPos.z), context.getRotation(), nbt.getByte("SkinID"), deckUUID, isCovered, (byte)context.getItemInHand().getDamageValue());
+        ItemStack heldItem = context.getItemInHand();
+        EntityCard cardDeck = new EntityCard(world, new Vector3d(clickPos.x, clickPos.y, clickPos.z), context.getRotation(), nbt.getByte("SkinID"), deckUUID, isCovered, (byte)heldItem.getDamageValue());
         world.addFreshEntity(cardDeck);
-        context.getItemInHand().shrink(1);
+        heldItem.shrink(1);
 
         return InteractionResult.SUCCESS;
     }

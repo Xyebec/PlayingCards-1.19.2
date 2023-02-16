@@ -23,14 +23,20 @@ public class RenderEntityCardDeck extends EntityRenderer<EntityCardDeck> {
     public void render(EntityCardDeck entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int combinedLight) {
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, combinedLight);
 
-        ItemStack cardStack = new ItemStack(ModItems.CARD_COVERED.get());
-        ItemHelper.getNBT(cardStack).putByte("SkinID", entity.getSkinId());
+        ItemStack card;
+        if (entity.isCovered()) {
+            card = new ItemStack(ModItems.CARD_COVERED.get());
+            ItemHelper.getNBT(card).putByte("SkinID", entity.getSkinId());
+        } else {
+            card = new ItemStack(ModItems.CARD.get());
+            card.setDamageValue(entity.getTopStackId());
+        }
 
         poseStack.pushPose();
         poseStack.mulPose(Vector3f.YP.rotationDegrees(-entity.getYRot() + 180));
         poseStack.scale(1.5F, 1.5F + (entity.getStackSize() * 0.4F), 1.5F);
 
-        CardHelper.renderItem(cardStack, poseStack, buffer, combinedLight);
+        CardHelper.renderItem(card, poseStack, buffer, combinedLight);
 
         poseStack.popPose();
     }

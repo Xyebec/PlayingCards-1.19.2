@@ -34,5 +34,7 @@ public class CardInteractEvent {
         card.flipCard(heldStack, player);
 
         PlayingCards.network.sendToServer(new PacketInteractCard("flipinv"));
+
+        event.setCanceled(true);
     }
 }
