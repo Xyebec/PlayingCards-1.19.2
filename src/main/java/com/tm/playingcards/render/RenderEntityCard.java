@@ -3,7 +3,6 @@ package com.tm.playingcards.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Vector3f;
 import com.tm.playingcards.entity.EntityCard;
-import com.tm.playingcards.entity.EntityCardDeck;
 import com.tm.playingcards.init.ModItems;
 import com.tm.playingcards.util.CardHelper;
 import com.tm.playingcards.util.ItemHelper;

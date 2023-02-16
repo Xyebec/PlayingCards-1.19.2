@@ -2,7 +2,6 @@ package com.tm.playingcards.item;
 
 import com.mojang.math.Vector3d;
 import com.tm.playingcards.entity.EntityCard;
-import com.tm.playingcards.entity.EntityCardDeck;
 import com.tm.playingcards.init.ModItems;
 import com.tm.playingcards.util.CardHelper;
 import com.tm.playingcards.util.ItemHelper;
@@ -21,7 +20,6 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
@@ -76,31 +74,21 @@ public class ItemCard extends Item {
         if (!(entity instanceof Player))
             return;
 
-        Player player = (Player)entity;
-        BlockPos pos = player.blockPosition();
-
         CompoundTag nbt = ItemHelper.getNBT(stack);
         if (!nbt.hasUUID("UUID"))
             return;
 
-        UUID id = ItemHelper.getNBT(stack).getUUID("UUID");
-        if (id.getLeastSignificantBits() == 0)
+        UUID deckUUID = ItemHelper.getNBT(stack).getUUID("UUID");
+        if (deckUUID.getLeastSignificantBits() == 0)
             return;
 
-        List<EntityCardDeck> closeDecks = world.getEntitiesOfClass(EntityCardDeck.class, new AABB(pos.getX() - 20, pos.getY() - 20, pos.getZ() - 20, pos.getX() + 20, pos.getY() + 20, pos.getZ() + 20));
+        Player player = (Player)entity;
+        BlockPos pos = player.blockPosition();
 
-        boolean found = false;
+        if (CardHelper.isNearDeck(world, pos, deckUUID))
+            return;
 
-        for (EntityCardDeck closeDeck : closeDecks) {
-            if (closeDeck.getUUID().equals(id)) {
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            player.getInventory().getItem(itemSlot).shrink(1);
-        }
+        player.getInventory().getItem(itemSlot).shrink(1);
     }
 
     @Override
@@ -110,27 +98,23 @@ public class ItemCard extends Item {
             return InteractionResult.PASS;
 
         CompoundTag nbt = ItemHelper.getNBT(context.getItemInHand());
-        UUID deckId = nbt.getUUID("UUID");
+        UUID deckUUID = nbt.getUUID("UUID");
 
-        BlockPos pos = context.getClickedPos();
         Level world = context.getLevel();
-        List<EntityCardDeck> closeDecks = world.getEntitiesOfClass(EntityCardDeck.class, new AABB(pos.getX() - 8, pos.getY() - 8, pos.getZ() - 8, pos.getX() + 8, pos.getY() + 8, pos.getZ() + 8));
 
-        for (EntityCardDeck closeDeck : closeDecks) {
-            if (closeDeck.getUUID().equals(deckId)) {
-                Vec3 clickPos = context.getClickLocation();
-                EntityCard cardDeck = new EntityCard(world, new Vector3d(clickPos.x, clickPos.y, clickPos.z), context.getRotation(), nbt.getByte("SkinID"), deckId, isCovered, (byte)context.getItemInHand().getDamageValue());
-                world.addFreshEntity(cardDeck);
-                context.getItemInHand().shrink(1);
+        if (!CardHelper.isNearDeck(world, context.getClickedPos(), deckUUID)) {
+            if (player.level.isClientSide)
+                player.displayClientMessage(Component.translatable("message.deck_too_far").withStyle(ChatFormatting.RED), true);
 
-                return InteractionResult.SUCCESS;
-            }
+            return InteractionResult.PASS;
         }
 
-        if (player.level.isClientSide)
-            player.displayClientMessage(Component.translatable("message.deck_too_far").withStyle(ChatFormatting.RED), true);
+        Vec3 clickPos = context.getClickLocation();
+        EntityCard cardDeck = new EntityCard(world, new Vector3d(clickPos.x, clickPos.y, clickPos.z), context.getRotation(), nbt.getByte("SkinID"), deckUUID, isCovered, (byte)context.getItemInHand().getDamageValue());
+        world.addFreshEntity(cardDeck);
+        context.getItemInHand().shrink(1);
 
-        return InteractionResult.PASS;
+        return InteractionResult.SUCCESS;
     }
 
     @Override

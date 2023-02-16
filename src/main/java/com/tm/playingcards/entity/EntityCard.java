@@ -7,7 +7,6 @@ import com.tm.playingcards.item.ItemCard;
 import com.tm.playingcards.util.CardHelper;
 import com.tm.playingcards.util.ItemHelper;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
@@ -21,10 +20,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import net.minecraftforge.network.NetworkHooks;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -87,21 +84,10 @@ public class EntityCard extends EntityStacked {
         if (level.getGameTime() % 20 != 0)
             return;
 
-        BlockPos pos = blockPosition();
-        List<EntityCardDeck> closeDecks = level.getEntitiesOfClass(EntityCardDeck.class, new AABB(pos.getX() - 20, pos.getY() - 20, pos.getZ() - 20, pos.getX() + 20, pos.getY() + 20, pos.getZ() + 20));
+        if (CardHelper.isNearDeck(level, blockPosition(), getDeckUUID()))
+            return;
 
-        boolean foundParentDeck = false;
-
-        for (EntityCardDeck closeDeck : closeDecks) {
-            if (getDeckUUID().equals(closeDeck.getUUID())) {
-                foundParentDeck = true;
-                break;
-            }
-        }
-
-        if (!foundParentDeck)
-            remove(RemovalReason.DISCARDED);
-
+        remove(RemovalReason.DISCARDED);
         super.onRemovedFromWorld();
     }
 
